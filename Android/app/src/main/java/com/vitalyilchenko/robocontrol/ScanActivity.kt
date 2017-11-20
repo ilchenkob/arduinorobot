@@ -50,12 +50,8 @@ class ScanActivity : Activity() {
         }
         BluetoothService.onDeviceStateChanged = { isConnected ->
             if (isConnected) {
-
-                BluetoothService.write("199199")
-                //BluetoothService.write("Hello world!")
-                //listAdapter?.setItems(BluetoothService.devices)
-                //var controlIntent = Intent(this, ControlActivity::class.java)
-                //startActivity(controlIntent)
+                var controlIntent = Intent(this, ControlActivity::class.java)
+                startActivity(controlIntent)
             }
         }
 

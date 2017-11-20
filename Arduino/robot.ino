@@ -1,6 +1,6 @@
 #include <SoftwareSerial.h>
 
-const int DIRECTION_CHANGE_DELAY = 200;
+const int DIRECTION_CHANGE_DELAY = 100;
 
 const int LEFT = 1;
 const int RIGHT = 2;
@@ -32,6 +32,10 @@ int lastLeftDirection, lastRightDirection;
 void setup() {
   //Serial.begin(9600);
   //Serial.println("Start.");
+  
+  //TCCR0B = TCCR0B & 0b11111000 | 0x02;
+  //TCCR1B = TCCR1B & 0b11111000 | 0x02;
+  //TCCR2B = TCCR2B & 0b11111000 | 0x02;
 
   btSerial.begin(9600);
 
@@ -55,37 +59,40 @@ void setup() {
 
 void loop() {
   
-  delay(200);
+  //delay(200);
   readStr="";
-
-  while (btSerial.available())
+  char c = '_';
+  while (readStr.length() < 6)
   {
-    delay(3);  //delay to allow buffer to fill 
-    if (btSerial.available() >0)
+    //delay(2);  //delay to allow buffer to fill 
+    if (btSerial.available() > 0)
     {
-      char c = btSerial.read();  //gets one byte from serial buffer
+      c = btSerial.read();  //gets one byte from serial buffer
       readStr += c; //makes the string readString
     } 
   }
   
-  if (readStr.length() > 0)
-  {
-    //Serial.println(readStr);
+  int leftSpeedValue = 0;
+  int rightSpeedValue = 0;
+
+  int leftDirection = readStr[0] == '0' ? _BACKWARD : _FORWARD;
+  leftSpeedValue = 155 + readStr.substring(1, 3).toInt();
+  if (leftSpeedValue < 160)
+    leftSpeedValue = 0;
     
-    int leftSpeedValue = 0;
-    int rightSpeedValue = 0;
+  int rightDirection = readStr[3] == '0' ? _BACKWARD : _FORWARD;
+  rightSpeedValue = 155 + readStr.substring(4, 6).toInt();
+  if (rightSpeedValue < 160)
+    rightSpeedValue = 0;
 
-    int leftDirection = readStr[0] == '0' ? _BACKWARD : _FORWARD;
-    leftSpeedValue = readStr.substring(1, 2).toInt();
-    int rightDirection = readStr[3] == '0' ? _BACKWARD : _FORWARD;
-    rightSpeedValue = readStr.substring(4, 5).toInt();
+  //Serial.print("DATA: ");
+  //Serial.print(readStr);
 
-    // min speed value is 155 and max is 255,
-    // by BT we are wating value from 0 to 99,
-    // so wee need to sum up 155 and value from BT
-    setSpeed(LEFT, leftDirection, 155 + leftSpeedValue);
-    setSpeed(RIGHT, rightDirection, 155 + rightSpeedValue);
-  }
+  // min speed value is 155 and max is 255,
+  // by BT we are wating value from 0 to 99,
+  // so wee need to sum up 155 and value from BT
+  setSpeed(LEFT, leftDirection, leftSpeedValue);
+  setSpeed(RIGHT, rightDirection, rightSpeedValue);
 }
 
 void setSpeed(int side, int _direction, int value)
@@ -95,7 +102,7 @@ void setSpeed(int side, int _direction, int value)
     if (_direction != lastLeftDirection)
     {
       setSideSpeed(ML1C, ML2C, 0);
-      delay(DIRECTION_CHANGE_DELAY);
+      //delay(DIRECTION_CHANGE_DELAY);
       setDirection(ML1A, ML1B, ML2A, ML2B, _direction);
     }
     setSideSpeed(ML1C, ML2C, value);
@@ -106,7 +113,7 @@ void setSpeed(int side, int _direction, int value)
     if (_direction != lastRightDirection)
     {
       setSideSpeed(MR1C, MR2C, 0);
-      delay(DIRECTION_CHANGE_DELAY);
+      //delay(DIRECTION_CHANGE_DELAY);
       setDirection(MR1A, MR1B, MR2A, MR2B, _direction);
     }
     setSideSpeed(MR1C, MR2C, value);
@@ -114,12 +121,13 @@ void setSpeed(int side, int _direction, int value)
   }
 }
 
-void setDirection(int a1, int b1, int a2, int b2, bool isForward)
+void setDirection(int a1, int b1, int a2, int b2, int _direction)
 {
-  if (isForward)
+  if (_direction == _FORWARD)
   {
     digitalWrite (a1, LOW);
     digitalWrite (b1, HIGH);
+    
     digitalWrite (a2, LOW);
     digitalWrite (b2, HIGH); 
   }
@@ -127,6 +135,7 @@ void setDirection(int a1, int b1, int a2, int b2, bool isForward)
   {
     digitalWrite (b1, LOW);
     digitalWrite (a1, HIGH);
+    
     digitalWrite (b2, LOW);
     digitalWrite (a2, HIGH); 
   }

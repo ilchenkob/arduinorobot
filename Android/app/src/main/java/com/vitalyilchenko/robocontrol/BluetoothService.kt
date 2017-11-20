@@ -7,8 +7,10 @@ import android.bluetooth.*
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
+import android.util.Log
 import com.vitalyilchenko.robocontrol.Models.BluetoothItem
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 object BluetoothService {
 
@@ -21,7 +23,6 @@ object BluetoothService {
     private var _connectedGatt: BluetoothGatt? = null
     private var _leCharacteristic: BluetoothGattCharacteristic? = null
 
-    private var _lastSentCommand: String = ""
     private var _lastCommand: String = ""
     private var _isWriting: Boolean = false
 
@@ -39,15 +40,16 @@ object BluetoothService {
     }
 
     fun isConnected(): Boolean {
-        var state = _bluetoothManager?.getConnectionState(connectedDevice, BluetoothGatt.GATT)
-        return _connectedGatt != null &&
-                state == BluetoothProfile.STATE_CONNECTED
+        //var state = _bluetoothManager?.getConnectionState(connectedDevice, BluetoothGatt.GATT)
+        return _connectedGatt != null
+                //&& state == BluetoothProfile.STATE_CONNECTED
     }
 
     var isScanning: Boolean = false
         private set
 
-    fun write(command: String) {
+    fun write(command: String)
+    {
         if (isConnected() && _leCharacteristic != null) {
             _lastCommand = command
             if (!_isWriting) {
@@ -111,6 +113,12 @@ object BluetoothService {
         if (characteristic != null) {
             var value = characteristic.getStringValue(0)
             if (value != _lastCommand) {
+
+                // we need to make a delay before sending the next command
+                TimeUnit.MILLISECONDS.sleep(100)
+
+                Log.i("ROBOT_COMMAND", _lastCommand)
+
                 _leCharacteristic?.setValue(_lastCommand)
                 _connectedGatt?.writeCharacteristic(_leCharacteristic)
             }
